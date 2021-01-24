@@ -9,23 +9,17 @@ const CategoryModel = require('../models/CategoryModel')
 const ProductModel = require('../models/ProductModel')
 const RoleModel = require('../models/RoleModel')
 
-
-// 得到路由器对象
 const router = express.Router()
-// console.log('router', router)
 
-// 指定需要过滤的属性
 const filter = {password: 0, __v: 0}
 
 
 // 登陆
 router.post('/login', (req, res) => {
   const {username, password} = req.body
-  // 根据username和password查询数据库users, 如果没有, 返回提示错误的信息, 如果有, 返回登陆成功信息(包含user)
   UserModel.findOne({username, password: md5(password)})
     .then(user => {
-      if (user) { // 登陆成功
-        // 生成一个cookie(userid: user._id), 并交给浏览器保存
+      if (user) { 
         res.cookie('userid', user._id, {maxAge: 1000 * 60 * 60 * 24})
         if (user.role_id) {
           RoleModel.findOne({_id: user.role_id})
@@ -36,11 +30,10 @@ router.post('/login', (req, res) => {
             })
         } else {
           user._doc.role = {menus: []}
-          // 返回登陆成功信息(包含user)
           res.send({status: 0, data: user})
         }
 
-      } else {// 登陆失败
+      } else {
         res.send({status: 1, msg: '用户名或密码不正确!'})
       }
     })
@@ -52,25 +45,18 @@ router.post('/login', (req, res) => {
 
 // 添加用户
 router.post('/manage/user/add', (req, res) => {
-  // 读取请求参数数据
   const {username, password} = req.body
-  // 处理: 判断用户是否已经存在, 如果存在, 返回提示错误的信息, 如果不存在, 保存
-  // 查询(根据username)
   UserModel.findOne({username})
     .then(user => {
-      // 如果user有值(已存在)
       if (user) {
-        // 返回提示错误的信息
         res.send({status: 1, msg: '此用户已存在'})
         return new Promise(() => {
         })
-      } else { // 没值(不存在)
-        // 保存
+      } else { 
         return UserModel.create({...req.body, password: md5(password || 'atguigu')})
       }
     })
     .then(user => {
-      // 返回包含user的json数据
       res.send({status: 0, data: user})
     })
     .catch(error => {
@@ -86,7 +72,6 @@ router.post('/manage/user/update', (req, res) => {
   UserModel.findOneAndUpdate({_id: user._id}, user)
     .then(oldUser => {
       const data = Object.assign(oldUser, user)
-      // 返回
       res.send({status: 0, data})
     })
     .catch(error => {
@@ -103,31 +88,6 @@ router.post('/manage/user/delete', (req, res) => {
       res.send({status: 0})
     })
 })
-
-// 获取用户信息的路由(根据cookie中的userid)
-/*router.get('/user', (req, res) => {
-  // 从请求的cookie得到userid
-  const userid = req.cookies.userid
-  // 如果不存在, 直接返回一个提示信息
-  if (!userid) {
-    return res.send({status: 1, msg: '请先登陆'})
-  }
-  // 根据userid查询对应的user
-  UserModel.findOne({_id: userid}, filter)
-    .then(user => {
-      if (user) {
-        res.send({status: 0, data: user})
-      } else {
-        // 通知浏览器删除userid cookie
-        res.clearCookie('userid')
-        res.send({status: 1, msg: '请先登陆'})
-      }
-    })
-    .catch(error => {
-      console.error('获取用户异常', error)
-      res.send({status: 1, msg: '获取用户异常, 请重新尝试'})
-    })
-})*/
 
 // 获取所有用户列表
 router.get('/manage/user/list', (req, res) => {
@@ -300,7 +260,6 @@ router.post('/manage/role/update', (req, res) => {
   role.auth_time = Date.now()
   RoleModel.findOneAndUpdate({_id: role._id}, role)
     .then(oldRole => {
-      // console.log('---', oldRole._doc)
       res.send({status: 0, data: {...oldRole._doc, ...role}})
     })
     .catch(error => {
@@ -324,7 +283,6 @@ function pageFilter(arr, pageNum, pageSize) {
   for (var i = start; i < end; i++) {
     list.push(arr[i])
   }
-
   return {
     pageNum,
     total,
